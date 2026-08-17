@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f9fbf7;
+  color: #22303C;
+}
+
+.app-container {
+  max-width: 420px;
+  width: 100%;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0px 15px 20px rgba(0,0,0,0.05);
+  border: 1px solid #e1e8ed;
+  overflow: hidden;
+}
+
+header {
+  background: #76b041;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+header p {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.content-section {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.target-card {
+  background: #fcfbf7;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.target-card h3 {
+  font-size: 1rem;
+  color: #22303C;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.input-group input {
+  flex: 1;
+  height: 42px;
+  padding-left: 12px;
+  border-radius: 8px;
+  border: 1px solid #e1e8ed;
+  outline: none;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.input-group input:focus {
+  border-color: #76b041;
+}
+
+#geo-btn {
+  padding: 0 14px;
+  height: 42px;
+  background-color: #eef3ec;
+  border: 1px solid #76b041;
+  color: #5d8e32;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#geo-btn:hover {
+  background-color: #e0eae0;
+}
+
+#geo-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#target-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  background-color: #e0d8c3;
+}
+
+.target-clue {
+  font-size: 0.85rem;
+  color: #657786;
+  font-style: italic;
+}
+
+.primary-action-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #76b041;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.primary-action-btn:hover {
+  background-color: #5d8e32;
+}
+
+#toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #22303C;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  z-index: 1000;
+  opacity: 0;
+}
+
+#toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.hidden {
+  display: none !important;
+}

@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>BIOSNAP — Find It</title>
+<meta name="description" content="A scavenger hunt for your neighborhood: BIOSNAP shows you a plant to track down, you go find it, then snap a photo to prove it." />
+<meta name="theme-color" content="#F7F9F8" />
+
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          biosnapBg: '#F7F9F8',
+          biosnapCard: '#FFFFFF',
+          biosnapDark: '#1E293B',
+          biosnapMuted: '#64748B',
+          biosnapGreen: '#7A9A77',
+          biosnapGreenDark: '#5E7D5B',
+          biosnapAccent: '#4A6B5D',
+        },
+        fontFamily: {
+          display: ['"Inter"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+          mono: ['"IBM Plex Mono"', 'monospace'],
+        },
+      },
+    },
+  };
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  body {
+    background-color: #F7F9F8;
+    color: #1E293B;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(122, 154, 119, 0.18) 1px, transparent 0),
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(30, 41, 59, 0.05), transparent 65%),
+      radial-gradient(ellipse 90% 70% at 50% 100%, rgba(30, 41, 59, 0.07), transparent 60%);
+    background-size: 22px 22px, 100% 100%, 100% 100%;
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-attachment: fixed, fixed, fixed;
+  }
+</style>
+</head>
+<body class="font-body antialiased min-h-screen flex flex-col">
+
+  <!-- ============================= ONBOARDING GATE ============================= -->
+  <div id="onboarding-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-biosnapDark/40 backdrop-blur-sm">
+    <div class="w-full max-w-sm bg-white text-biosnapDark rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+      <div class="px-7 pt-7 pb-2 text-center">
+        <!-- Logo Header in Onboarding -->
+        <div class="mx-auto w-24 h-24 mb-2 flex items-center justify-center">
+          <img src="logo_2.png" alt="BIOSNAP Logo" class="w-full h-full object-contain" />
+        </div>
+        <p class="font-bold text-2xl text-biosnapDark tracking-tight">Welcome to BIOSNAP</p>
+        <p class="text-sm text-biosnapMuted mt-1 leading-relaxed">Select your local region to find native flora nearby.</p>
+      </div>
+
+      <form id="onboarding-form" class="px-7 pb-7 pt-4 space-y-4">
+        <div>
+          <label for="ob-username" class="block text-[11px] font-mono uppercase tracking-widest text-biosnapMuted mb-1.5">Explorer Name</label>
+          <input id="ob-username" name="username" type="text" required maxlength="30" autocomplete="nickname"
+            placeholder="Your name or handle"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-biosnapDark placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#7A9A77]" />
+        </div>
+
+        <div>
+          <label for="ob-region" class="block text-[11px] font-mono uppercase tracking-widest text-biosnapMuted mb-1.5">Hunting Region</label>
+          <select id="ob-region" name="region" required
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-biosnapDark focus:outline-none focus:ring-2 focus:ring-[#7A9A77] cursor-pointer">
+            <option value="" disabled selected>Select your region</option>
+            <option value="northeast-us">Northeast US (Temperate Woodlands)</option>
+            <option value="pacific-northwest">Pacific Northwest (Evergreen Forests)</option>
+            <option value="southeast-us">Southeast US (Coastal Plains &amp; Wetlands)</option>
+            <option value="midwest-us">Midwest US (Prairies &amp; Deciduous)</option>
+            <option value="western-europe">Western Europe (Temperate Flora)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="ob-password" class="block text-[11px] font-mono uppercase tracking-widest text-biosnapMuted mb-1.5">Passcode</label>
+          <input id="ob-password" name="password" type="password" required minlength="4" maxlength="40" autocomplete="new-password"
+            placeholder="Device PIN or passcode"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-biosnapDark placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#7A9A77]" />
+        </div>
+
+        <p id="ob-error" class="hidden text-xs text-rose-600 font-medium"></p>
+        <button type="submit"
+          class="w-full bg-[#7A9A77] hover:bg-[#5E7D5B] active:scale-[0.99] transition text-white font-semibold py-3 rounded-xl shadow-sm cursor-pointer">
+          Start exploring
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================= APP ROOT ============================= -->
+  <div id="app-root" class="hidden flex-1 w-full flex flex-col">
+
+    <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-xs">
+      <div class="max-w-xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <!-- Logo PNG Brand Header -->
+          <div class="w-10 h-10 flex items-center justify-center shrink-0">
+            <img src="logo_2.png" alt="BIOSNAP Logo" class="w-full h-full object-contain" />
+          </div>
+          <div class="leading-tight min-w-0">
+            <h1 class="font-bold text-lg text-biosnapDark tracking-tight">BIOSNAP</h1>
+            <p id="header-sub" class="text-[11px] font-mono text-biosnapMuted truncate">exploring region</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-profile" type="button" title="Edit Profile"
+            class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-biosnapMuted hover:text-biosnapDark hover:border-slate-300 transition cursor-pointer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 20c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="12" cy="7.5" r="3.5" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+          </button>
+          <button id="btn-signout" type="button" title="Switch Account / Sign Out"
+            class="px-2.5 h-8 rounded-full border border-slate-200 bg-slate-50 text-biosnapMuted text-xs font-mono flex items-center justify-center hover:bg-slate-100 hover:text-biosnapDark transition cursor-pointer">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-xl mx-auto px-4 pt-6 pb-24 space-y-8">
+
+      <!-- ---------- VIEW: HUNT (Default) ---------- -->
+      <div id="view-hunt" class="space-y-6 view-section">
+        <section id="view-target" class="space-y-3">
+          <div class="flex items-baseline justify-between px-1">
+            <p class="text-[11px] font-mono uppercase tracking-widest text-biosnapMuted">today's find</p>
+            <span id="target-location" class="text-[11px] font-mono text-biosnapMuted"></span>
+          </div>
+
+          <div id="target-card" class="bg-white text-biosnapDark rounded-2xl shadow-sm overflow-hidden border border-slate-200">
+            <!-- 1. IMAGE ON TOP -->
+            <div class="relative bg-slate-100">
+              <img id="target-img" class="w-full h-64 object-cover" src="https://upload.wikimedia.org/wikipedia/commons/4/46/Plant_placeholder.svg" alt="A plant to find nearby" />
+              <span id="target-stamp" class="hidden absolute top-4 right-4 bg-[#7A9A77] text-white px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider shadow">found ✓</span>
+            </div>
+
+            <div class="p-5 space-y-3">
+              <!-- 2. NAME OF PLANT -->
+              <div>
+                <h2 id="target-common-name" class="text-2xl font-bold text-biosnapDark leading-tight">Loading plant...</h2>
+                
+                <!-- 3. SCIENTIFIC NAME OF PLANT [CHANGE BUTTON] -->
+                <div class="flex items-center justify-between gap-2 mt-1">
+                  <p id="target-sci" class="italic text-sm text-biosnapMuted">Please wait...</p>
+                  <button id="btn-reroll" type="button" title="Change target plant"
+                    class="px-3 py-1 text-xs font-mono rounded-lg border border-slate-200 text-biosnapMuted hover:text-[#5E7D5B] hover:border-[#7A9A77] bg-slate-50 transition cursor-pointer flex items-center gap-1.5 shrink-0">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M3.5 12a8.5 8.5 0 0 1 14.9-5.6M20.5 12a8.5 8.5 0 0 1-14.9 5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      <path d="M18.5 3v4h-4M5.5 21v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    change
+                  </button>
+                </div>
+              </div>
+
+              <p id="target-clue" class="text-sm text-slate-600 leading-relaxed pt-1 border-t border-slate-100"></p>
+
+              <!-- 4. I FOUND ONE BUTTON -->
+              <div class="pt-2">
+                <button id="btn-go-identify" type="button"
+                  class="w-full bg-[#7A9A77] hover:bg-[#5E7D5B] active:scale-[0.99] transition text-white font-semibold py-3 rounded-xl shadow-xs text-sm cursor-pointer flex items-center justify-center gap-2">
+                  <span>I found one</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. PROVE IT SECTION -->
+        <section id="view-capture" class="space-y-4 pt-2">
+          <p class="text-[11px] font-mono uppercase tracking-widest text-biosnapMuted px-1">Prove It</p>
+
+          <div id="capture-card" class="relative rounded-2xl border-2 border-dashed border-slate-300 bg-white p-6 text-center shadow-xs">
+            <p class="text-xl font-bold text-biosnapDark mb-1">Found your plant?</p>
+            <p class="text-sm text-biosnapMuted mb-6">Snap a photo of it, or choose one from your gallery.</p>
+
+            <button id="btn-capture" type="button"
+              class="mx-auto w-20 h-20 rounded-full bg-[#7A9A77] hover:bg-[#5E7D5B] active:scale-95 transition
+                     flex items-center justify-center shadow-md text-white cursor-pointer">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M4 8h2.5L8 5.5h8L17.5 8H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6"/>
+                <circle cx="12" cy="13.5" r="3.6" stroke="currentColor" stroke-width="1.6"/>
+              </svg>
+            </button>
+            <p class="mt-3 text-xs font-mono uppercase tracking-widest text-biosnapMuted">tap to capture</p>
+
+            <button id="btn-gallery" type="button" class="mt-5 text-sm font-medium text-[#5E7D5B] underline underline-offset-4 decoration-[#7A9A77]/40 hover:text-[#7A9A77] cursor-pointer">
+              or choose from gallery
+            </button>
+
+            <input id="input-camera" type="file" accept="image/*" capture="environment" class="hidden" />
+            <input id="input-gallery" type="file" accept="image/*" class="hidden" />
+          </div>
+
+          <div id="preview-card" class="hidden rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm">
+            <div class="relative bg-slate-100">
+              <img id="preview-img" src="" alt="Your photo" class="w-full max-h-80 object-cover" />
+              <button id="btn-retake" type="button"
+                class="absolute top-3 right-3 bg-biosnapDark/70 text-white text-xs font-mono px-2.5 py-1.5 rounded-full backdrop-blur cursor-pointer">
+                retake ✕
+              </button>
+            </div>
+            <div class="p-4">
+              <button id="btn-identify" type="button"
+                class="w-full bg-[#7A9A77] hover:bg-[#5E7D5B] active:scale-[0.99] transition text-white font-semibold py-3 rounded-xl shadow-xs cursor-pointer">
+                Check my find
+              </button>
+            </div>
+          </div>
+
+          <div id="loading-card" class="hidden rounded-2xl bg-white border border-slate-200 p-8 text-center shadow-sm">
+            <div class="mx-auto w-10 h-10 border-[3px] border-slate-200 border-t-[#7A9A77] rounded-full animate-spin"></div>
+            <p class="mt-4 text-sm font-semibold text-biosnapDark" id="loading-text">Analyzing your specimen…</p>
+          </div>
+
+          <div id="error-card" class="hidden rounded-2xl bg-rose-50 border border-rose-200 p-5 text-sm text-rose-800"></div>
+          <div id="verdict-card" class="hidden rounded-2xl p-5 text-center shadow-sm"></div>
+
+          <div id="results-wrap" class="hidden space-y-4">
+            <p class="text-xs font-mono uppercase tracking-widest text-biosnapMuted pl-1">what we saw</p>
+            <div id="results-list" class="space-y-4"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ---------- VIEW: NOTEBOOK ---------- -->
+      <div id="view-notebook" class="space-y-4 hidden view-section">
+        <div class="flex items-baseline justify-between px-1">
+          <p class="text-[11px] font-mono uppercase tracking-widest text-biosnapMuted">field notebook</p>
+          <span id="collection-count" class="text-[11px] font-mono text-biosnapMuted"></span>
+        </div>
+        <div id="collection-empty" class="hidden rounded-2xl border-2 border-dashed border-slate-300 p-10 text-center bg-white shadow-xs">
+          <p class="text-lg font-bold text-biosnapDark mb-1">Your notebook is empty</p>
+          <p class="text-sm text-biosnapMuted">Find your first plant on the hunt tab to start filling it in.</p>
+        </div>
+        <div id="collection-grid" class="grid grid-cols-2 gap-3"></div>
+      </div>
+
+      <!-- ---------- VIEW: STANDINGS ---------- -->
+      <div id="view-leaderboard" class="space-y-4 hidden view-section">
+        <div class="flex items-baseline justify-between px-1">
+          <p class="text-[11px] font-mono uppercase tracking-widest text-biosnapMuted">neighborhood standings</p>
+          <span class="text-[11px] font-mono text-biosnapMuted">Local Explorers</span>
+        </div>
+        <div class="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-sm">
+          <div id="leaderboard-list" class="divide-y divide-slate-100"></div>
+        </div>
+      </div>
+
+      <!-- ---------- VIEW: BADGES ---------- -->
+      <div id="view-achievements" class="space-y-4 hidden view-section">
+        <div class="flex items-baseline justify-between px-1">
+          <p class="text-[11px] font-mono uppercase tracking-widest text-biosnapMuted">badges & milestones</p>
+          <span id="achievement-progress" class="text-[11px] font-mono text-biosnapMuted">0 / 3 Unlocked</span>
+        </div>
+        <div id="achievements-grid" class="grid grid-cols-1 gap-3"></div>
+      </div>
+
+    </main>
+
+    <!-- ============================= BOTTOM NAVIGATION ============================= -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 py-2 shadow-sm">
+      <div class="max-w-xl mx-auto px-4 flex justify-around items-center">
+        <button data-tab="hunt" class="nav-tab flex flex-col items-center gap-1 text-[#5E7D5B] py-1 px-3 transition cursor-pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/>
+            <path d="M15.3 15.3 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M10.7 7c-1.6 0-3.1 1.3-3.1 3.3 0 1.4.8 2.4 1.9 2.9-.3-1.5.2-2.9 1.3-3.7.6 1 .5 2.2 0 3 1.4-.2 2.1-1.4 2.1-2.8 0-1.7-1.1-2.7-2.2-2.7Z" fill="currentColor"/>
+          </svg>
+          <span class="text-[10px] font-mono tracking-wider font-medium">Hunt</span>
+        </button>
+        <button data-tab="notebook" class="nav-tab flex flex-col items-center gap-1 text-slate-400 hover:text-biosnapDark py-1 px-3 transition cursor-pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M5 4.8A1.8 1.8 0 0 1 6.8 3H18a1 1 0 0 1 1 1v16.2a1 1 0 0 1-1 1H6.8A1.8 1.8 0 0 1 5 19.4V4.8Z" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M8 8.2h8M8 11.4h5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14.3 3v6.2l-1.65-1.5-1.65 1.5V3" fill="currentColor"/>
+          </svg>
+          <span class="text-[10px] font-mono tracking-wider">Notebook</span>
+        </button>
+        <button data-tab="leaderboard" class="nav-tab flex flex-col items-center gap-1 text-slate-400 hover:text-biosnapDark py-1 px-3 transition cursor-pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="3" y="13.5" width="5" height="7.5" rx="1" fill="currentColor" opacity="0.5"/>
+            <rect x="9.5" y="7.5" width="5" height="13.5" rx="1" fill="currentColor"/>
+            <rect x="16" y="15.5" width="5" height="5.5" rx="1" fill="currentColor" opacity="0.5"/>
+          </svg>
+          <span class="text-[10px] font-mono tracking-wider">Standings</span>
+        </button>
+        <button data-tab="achievements" class="nav-tab flex flex-col items-center gap-1 text-slate-400 hover:text-biosnapDark py-1 px-3 transition cursor-pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M9.3 13.5 6.7 21l2.9-1.6 1.9 2 2.4-7.3" fill="currentColor" opacity="0.45"/>
+            <path d="M14.7 13.5 17.3 21l-2.9-1.6-1.9 2-2.4-7.3" fill="currentColor" opacity="0.45"/>
+            <circle cx="12" cy="10" r="6.3" fill="currentColor"/>
+            <path d="M12 6.3c-1.7 0-3.2 1.4-3.2 3.4 0 1.4.8 2.6 2 3.1-.3-1.6.2-3.1 1.4-4 .6 1.1.5 2.4 0 3.3 1.5-.2 2.3-1.6 2.3-3.1 0-1.8-1.2-2.9-2.5-2.9Z" fill="#fff"/>
+          </svg>
+          <span class="text-[10px] font-mono tracking-wider">Badges</span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <div id="detail-overlay" class="hidden fixed inset-0 z-40 bg-biosnapDark/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-6">
+    <div id="detail-sheet" class="bg-white text-biosnapDark w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[88vh] overflow-y-auto shadow-2xl"></div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-biosnapDark text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg"></div>
+
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // State
+  let user = JSON.parse(localStorage.getItem("biosnap_user")) || null;
+  let currentTarget = null;
+  let capturedImageFile = null;
+  let notebook = JSON.parse(localStorage.getItem("biosnap_notebook")) || [];
+
+  // DOM Elements
+  const onboardingOverlay = document.getElementById("onboarding-overlay");
+  const onboardingForm = document.getElementById("onboarding-form");
+  const appRoot = document.getElementById("app-root");
+  const headerSub = document.getElementById("header-sub");
+
+  const targetImg = document.getElementById("target-img");
+  const targetCommonName = document.getElementById("target-common-name");
+  const targetSci = document.getElementById("target-sci");
+  const targetClue = document.getElementById("target-clue");
+  const targetLocation = document.getElementById("target-location");
+  const targetStamp = document.getElementById("target-stamp");
+
+  const btnReroll = document.getElementById("btn-reroll");
+  const btnGoIdentify = document.getElementById("btn-go-identify");
+  const btnCapture = document.getElementById("btn-capture");
+  const btnGallery = document.getElementById("btn-gallery");
+  const inputCamera = document.getElementById("input-camera");
+  const inputGallery = document.getElementById("input-gallery");
+  const previewCard = document.getElementById("preview-card");
+  const previewImg = document.getElementById("preview-img");
+  const btnRetake = document.getElementById("btn-retake");
+  const btnIdentify = document.getElementById("btn-identify");
+  const loadingCard = document.getElementById("loading-card");
+  const errorCard = document.getElementById("error-card");
+  const verdictCard = document.getElementById("verdict-card");
+
+  // Notebook + achievements (elements already existed in the HTML but
+  // nothing ever rendered into them)
+  const collectionCountEl = document.getElementById("collection-count");
+  const collectionEmptyEl = document.getElementById("collection-empty");
+  const collectionGridEl = document.getElementById("collection-grid");
+  const achievementsGridEl = document.getElementById("achievements-grid");
+  const achievementProgressEl = document.getElementById("achievement-progress");
+  const detailOverlay = document.getElementById("detail-overlay");
+  const detailSheet = document.getElementById("detail-sheet");
+
+  // Navigation tabs
+  const navTabs = document.querySelectorAll(".nav-tab");
+  const viewSections = document.querySelectorAll(".view-section");
+
+  // Neighborhood standings
+  const leaderboardListEl = document.getElementById("leaderboard-list");
+
+  // Offline fallback only — used if /api/leaderboard can't be reached.
+  // Normally standings come straight from the server, which blends this
+  // same idea with the user's real, persisted species count.
+  const OFFLINE_FALLBACK_NEIGHBORS = [
+    { username: "ForestGuardian", species: 14 },
+    { username: "MossWhisperer", species: 11 },
+    { username: "PetalPatrol", species: 9 },
+    { username: "RootRambler", species: 7 },
+    { username: "SunflowerSadie", species: 6 },
+    { username: "FernFinder99", species: 4 },
+    { username: "WeedWanderer", species: 2 },
+    { username: "BarkBuddy", species: 1 },
+  ];
+
+  // Achievement tiers, unlocked based on how many *unique* species are in
+  // the notebook. Add more tiers here any time — rendering below is
+  // fully driven by this list, nothing is hardcoded in the HTML anymore.
+  const ACHIEVEMENTS = [
+    { id: "first-sprout", icon: "🌱", title: "First Sprout", description: "Successfully identify and save your first plant.", goal: 1 },
+    { id: "green-thumb", icon: "🌿", title: "Green Thumb", description: "Find 5 different species.", goal: 5 },
+    { id: "botanist", icon: "🌳", title: "Botanist", description: "Find 10 different species.", goal: 10 },
+  ];
+
+  // Initialize App
+  if (!user) {
+    onboardingOverlay.classList.remove("hidden");
+    appRoot.classList.add("hidden");
+  } else {
+    initApp();
+  }
+
+  // Onboarding Submit
+  onboardingForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const username = document.getElementById("ob-username").value.trim();
+    const region = document.getElementById("ob-region").value;
+    const password = document.getElementById("ob-password").value;
+
+    if (!username || !region) return;
+
+    user = { username, region, password };
+    localStorage.setItem("biosnap_user", JSON.stringify(user));
+
+    onboardingOverlay.classList.add("hidden");
+    appRoot.classList.remove("hidden");
+    initApp();
+  });
+
+  // Sign out / Switch user
+  document.getElementById("btn-signout").addEventListener("click", () => {
+    localStorage.removeItem("biosnap_user");
+    location.reload();
+  });
+
+  function initApp() {
+    onboardingOverlay.classList.add("hidden");
+    appRoot.classList.remove("hidden");
+    headerSub.textContent = `exploring ${user.region}`;
+    targetLocation.textContent = user.region.replace("-", " ");
+    loadTargetPlant();
+    loadNotebook();
+    renderLeaderboard();
+  }
+
+  async function loadTargetPlant(attempt = 0) {
+    const MAX_ATTEMPTS = 4;
+    try {
+      const res = await fetch(`/api/target?region=${encodeURIComponent(user.region)}`);
+      const data = await res.json();
+
+      if ((!data.image || data.image.trim() === "") && attempt < MAX_ATTEMPTS) {
+        return loadTargetPlant(attempt + 1);
+      }
+
+      currentTarget = data;
+
+      targetCommonName.textContent = data.common_name;
+      targetSci.textContent = data.scientific_name;
+      targetClue.textContent = data.clue;
+      targetImg.src = data.image || "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/A_sunflower.jpg/640px-A_sunflower.jpg";
+      targetStamp.classList.add("hidden");
+    } catch (err) {
+      console.error("Failed to load target plant:", err);
+      // Fallback data if backend isn't running yet
+      targetCommonName.textContent = "Yelloweyed Grass";
+      targetSci.textContent = "Xyris torta";
+      targetClue.textContent = "Look in wet pinelands and bogs for distinctive yellow terminal flower spikes.";
+      targetImg.src = "https://upload.wikimedia.org/wikipedia/commons/3/35/Xyris_torta_Kral.jpg";
+    }
+  }
+
+  // Reroll Target ("change" button)
+  btnReroll.addEventListener("click", () => {
+    loadTargetPlant();
+    showToast("Loaded a new target plant!");
+  });
+
+  // Smooth scroll to capture ("I found one" button)
+  btnGoIdentify.addEventListener("click", () => {
+    document.getElementById("view-capture").scrollIntoView({ behavior: "smooth" });
+  });
+
+  // Camera / Gallery Triggers
+  btnCapture.addEventListener("click", () => inputCamera.click());
+  btnGallery.addEventListener("click", () => inputGallery.click());
+
+  [inputCamera, inputGallery].forEach(input => {
+    input.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      capturedImageFile = file;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        previewImg.src = evt.target.result;
+        document.getElementById("capture-card").classList.add("hidden");
+        previewCard.classList.remove("hidden");
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  btnRetake.addEventListener("click", () => {
+    capturedImageFile = null;
+    previewCard.classList.add("hidden");
+    document.getElementById("capture-card").classList.remove("hidden");
+    previewImg.src = "";
+    inputCamera.value = "";
+    inputGallery.value = "";
+  });
+
+  // Identify / Check match
+  btnIdentify.addEventListener("click", async () => {
+    if (!capturedImageFile) return;
+
+    previewCard.classList.add("hidden");
+    loadingCard.classList.remove("hidden");
+    errorCard.classList.add("hidden");
+    verdictCard.classList.add("hidden");
+
+    const formData = new FormData();
+    formData.append("image", capturedImageFile);
+
+    // Tell the server what we're actually hunting for, so it can check
+    // the identified species against it instead of just returning
+    // "success" for any photo of anything.
+    const params = new URLSearchParams();
+    if (currentTarget?.scientific_name) params.set("target", currentTarget.scientific_name);
+    if (currentTarget?.common_name) params.set("target_name", currentTarget.common_name);
+
+    try {
+      const res = await fetch(`/api/identify?${params.toString()}`, {
+        method: "POST",
+        body: formData
+      });
+      const json = await res.json();
+
+      loadingCard.classList.add("hidden");
+
+      if (!json.success) {
+        throw new Error(json.error || "Identification failed");
+      }
+
+      const parsedData = JSON.parse(json.data);
+      const isMatch = !!parsedData.matches_target;
+
+      // Always show the photo + verdict together so there's a way to
+      // retake and try again, whether it matched or not.
+      previewCard.classList.remove("hidden");
+
+      if (isMatch) {
+        verdictCard.className = "rounded-2xl p-5 text-center shadow-sm bg-[#7A9A77]/15 border border-[#7A9A77] text-biosnapDark";
+        verdictCard.innerHTML = `<p class="font-bold text-lg">Specimen analyzed successfully!</p><p class="text-sm text-slate-600 mt-1">Identified as: <strong>${parsedData.common_name || "Unknown Plant"}</strong></p>`;
+        targetStamp.classList.remove("hidden");
+
+        const newlyUnlocked = await addToNotebook({
+          common_name: parsedData.common_name || currentTarget?.common_name || "Unknown plant",
+          scientific_name: parsedData.scientific_name || currentTarget?.scientific_name || "Unknown",
+          image: previewImg.src,
+        });
+
+        showToast(
+          newlyUnlocked.length
+            ? `Match confirmed! 🏆 New badge: ${newlyUnlocked[0].title}`
+            : "Match confirmed! Added to your notebook."
+        );
+      } else {
+        verdictCard.className = "rounded-2xl p-5 text-center shadow-sm bg-amber-50 border border-amber-300 text-amber-900";
+        verdictCard.innerHTML = `<p class="font-bold text-lg">Not quite — try again</p><p class="text-sm mt-1">That looks more like <strong>${parsedData.common_name || "something else"}</strong>, not today's target (<em>${currentTarget?.common_name || currentTarget?.scientific_name || "your plant"}</em>).</p>`;
+        showToast("That doesn't match today's plant yet.");
+      }
+
+      verdictCard.classList.remove("hidden");
+
+    } catch (err) {
+      loadingCard.classList.add("hidden");
+      errorCard.textContent = `Error: ${err.message}. Make sure your backend API key is configured.`;
+      errorCard.classList.remove("hidden");
+      previewCard.classList.remove("hidden");
+    }
+  });
+
+  // Navigation Tab Switcher
+  navTabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      const targetView = tab.getAttribute("data-tab");
+
+      navTabs.forEach(t => {
+        t.classList.remove("text-[#5E7D5B]");
+        t.classList.add("text-slate-400");
+        const span = t.querySelector("span");
+        if (span) span.classList.remove("font-medium");
+      });
+      tab.classList.add("text-[#5E7D5B]");
+      tab.classList.remove("text-slate-400");
+      const activeSpan = tab.querySelector("span");
+      if (activeSpan) activeSpan.classList.add("font-medium");
+
+      viewSections.forEach(sec => sec.classList.add("hidden"));
+      document.getElementById(`view-${targetView}`).classList.remove("hidden");
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // FIELD NOTEBOOK
+  // One entry per unique species (by scientific name) — re-finding the
+  // same species updates its photo/date rather than duplicating it.
+  // Now backed by the real /api/collection endpoints on the server,
+  // with localStorage kept as an offline cache/fallback if the server
+  // is unreachable.
+  // ---------------------------------------------------------------
+  async function loadNotebook() {
+    try {
+      const res = await fetch(`/api/collection?username=${encodeURIComponent(user.username)}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        notebook = data;
+        localStorage.setItem("biosnap_notebook", JSON.stringify(notebook));
+      }
+    } catch (err) {
+      console.error("Couldn't reach the server for the notebook, using local cache:", err);
+      // notebook already holds whatever was cached in localStorage at load time
+    }
+    renderNotebook();
+    renderAchievements();
+  }
+
+  async function addToNotebook({ common_name, scientific_name, image }) {
+    const speciesCountBefore = notebook.length;
+    const existing = notebook.find(
+      (n) => n.scientific_name.toLowerCase() === scientific_name.toLowerCase()
+    );
+
+    try {
+      // Re-finding a species: clear the old server record before saving
+      // the fresh one, so it updates in place instead of duplicating.
+      if (existing) {
+        await fetch(`/api/collection/${existing.id}`, { method: "DELETE" });
+      }
+
+      const res = await fetch("/api/collection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: user.username,
+          common_name,
+          scientific_name,
+          image,
+          region: user.region,
+          foundAt: Date.now(),
+        }),
+      });
+      const saved = await res.json();
+
+      notebook = notebook.filter(
+        (n) => n.scientific_name.toLowerCase() !== scientific_name.toLowerCase()
+      );
+      notebook.push(saved);
+    } catch (err) {
+      console.error("Couldn't sync this find to the server, saving locally only:", err);
+      if (existing) {
+        Object.assign(existing, { common_name, image, foundAt: Date.now() });
+      } else {
+        notebook.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          common_name,
+          scientific_name,
+          image,
+          region: user.region,
+          foundAt: Date.now(),
+        });
+      }
+    }
+
+    localStorage.setItem("biosnap_notebook", JSON.stringify(notebook));
+    renderNotebook();
+    renderLeaderboard();
+
+    const newlyUnlocked = ACHIEVEMENTS.filter(
+      (a) => speciesCountBefore < a.goal && notebook.length >= a.goal
+    );
+    renderAchievements();
+    return newlyUnlocked;
+  }
+
+  function renderNotebook() {
+    collectionCountEl.textContent = notebook.length
+      ? `${notebook.length} species`
+      : "";
+    collectionEmptyEl.classList.toggle("hidden", notebook.length > 0);
+    collectionGridEl.innerHTML = "";
+
+    notebook
+      .slice()
+      .sort((a, b) => b.foundAt - a.foundAt)
+      .forEach((entry) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className =
+          "text-left rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer";
+        card.innerHTML = `
+          <div class="aspect-square bg-slate-100 overflow-hidden">
+            <img src="${entry.image}" alt="${entry.common_name}" class="w-full h-full object-cover" />
+          </div>
+          <div class="p-2.5">
+            <p class="font-bold text-sm text-biosnapDark leading-tight truncate">${entry.common_name}</p>
+            <p class="italic text-[11px] text-biosnapMuted truncate">${entry.scientific_name}</p>
+          </div>
+        `;
+        card.addEventListener("click", () => openDetail(entry));
+        collectionGridEl.appendChild(card);
+      });
+  }
+
+  function openDetail(entry) {
+    detailSheet.innerHTML = `
+      <div class="relative">
+        <img src="${entry.image}" alt="${entry.common_name}" class="w-full max-h-72 object-cover bg-slate-100" />
+        <button id="detail-close" type="button"
+          class="absolute top-3 right-3 bg-biosnapDark/70 text-white text-xs font-mono px-2.5 py-1.5 rounded-full backdrop-blur cursor-pointer">
+          close ✕
+        </button>
+      </div>
+      <div class="p-5 space-y-2">
+        <p class="font-bold text-2xl text-biosnapDark leading-tight">${entry.common_name}</p>
+        <p class="italic text-biosnapMuted">${entry.scientific_name}</p>
+        <p class="text-xs font-mono text-biosnapMuted pt-1">found ${new Date(entry.foundAt).toLocaleDateString()}</p>
+        <button id="detail-remove" type="button"
+          class="w-full border border-slate-200 text-biosnapMuted hover:bg-slate-50 transition text-sm font-medium py-2.5 rounded-xl mt-3 cursor-pointer">
+          Remove from notebook
+        </button>
+      </div>
+    `;
+    document.getElementById("detail-close").addEventListener("click", closeDetail);
+    document.getElementById("detail-remove").addEventListener("click", async () => {
+      notebook = notebook.filter((n) => n.id !== entry.id);
+      localStorage.setItem("biosnap_notebook", JSON.stringify(notebook));
+      closeDetail();
+      renderNotebook();
+      renderAchievements();
+      renderLeaderboard();
+      try {
+        await fetch(`/api/collection/${entry.id}`, { method: "DELETE" });
+      } catch (err) {
+        console.error("Couldn't remove this entry on the server:", err);
+      }
+    });
+    detailOverlay.classList.remove("hidden");
+  }
+
+  function closeDetail() {
+    detailOverlay.classList.add("hidden");
+    detailSheet.innerHTML = "";
+  }
+  detailOverlay.addEventListener("click", (e) => {
+    if (e.target === detailOverlay) closeDetail();
+  });
+
+  // ---------------------------------------------------------------
+  // ACHIEVEMENTS
+  // Unlocked purely as a function of how many unique species are in the
+  // notebook — no separate tracking needed, so it can never drift out
+  // of sync with what's actually been found.
+  // ---------------------------------------------------------------
+  function renderAchievements() {
+    const speciesCount = notebook.length;
+    const unlockedCount = ACHIEVEMENTS.filter((a) => speciesCount >= a.goal).length;
+    achievementProgressEl.textContent = `${unlockedCount} / ${ACHIEVEMENTS.length} Unlocked`;
+
+    achievementsGridEl.innerHTML = "";
+    ACHIEVEMENTS.forEach((a) => {
+      const unlocked = speciesCount >= a.goal;
+      const card = document.createElement("div");
+      card.className = `rounded-2xl bg-white border p-4 flex items-center gap-4 shadow-sm ${
+        unlocked ? "border-[#7A9A77]" : "border-slate-200"
+      }`;
+      card.innerHTML = `
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-bold text-xl ${
+          unlocked ? "bg-[#7A9A77]/15 text-[#5E7D5B]" : "bg-slate-100 text-slate-400"
+        }">${a.icon}</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-biosnapDark text-base">${a.title}</p>
+          <p class="text-xs text-biosnapMuted">${a.description}</p>
+          ${!unlocked ? `<p class="text-[11px] font-mono text-slate-400 mt-1">${speciesCount} / ${a.goal}</p>` : ""}
+        </div>
+        <span class="text-xs font-mono px-2 py-1 rounded shrink-0 ${
+          unlocked ? "bg-[#7A9A77]/15 text-[#5E7D5B] font-medium" : "text-slate-400 bg-slate-100"
+        }">${unlocked ? "Unlocked" : "Locked"}</span>
+      `;
+      achievementsGridEl.appendChild(card);
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // NEIGHBORHOOD STANDINGS
+  // Pulls real standings from the server, which blends its neighbor
+  // sample with the current user's actual, persisted species count.
+  // Re-fetched every time the notebook changes so the user's row
+  // actually moves as they find more plants.
+  // ---------------------------------------------------------------
+  async function renderLeaderboard() {
+    if (!leaderboardListEl || !user) return;
+
+    let entries;
+    try {
+      const res = await fetch(
+        `/api/leaderboard?username=${encodeURIComponent(user.username)}&count=${notebook.length}`
+      );
+      entries = await res.json();
+      if (!Array.isArray(entries)) throw new Error("Unexpected leaderboard response");
+    } catch (err) {
+      console.error("Couldn't reach the server for standings, using local fallback:", err);
+      entries = [
+        ...OFFLINE_FALLBACK_NEIGHBORS,
+        { username: user.username, species: notebook.length },
+      ];
+    }
+
+    entries = entries
+      .slice()
+      .sort((a, b) => b.species - a.species || a.username.localeCompare(b.username));
+
+    leaderboardListEl.innerHTML = "";
+    entries.forEach((entry, i) => {
+      const isYou = entry.username.toLowerCase() === user.username.toLowerCase();
+      const level =
+        entry.level ?? Math.max(1, ACHIEVEMENTS.filter((a) => entry.species >= a.goal).length);
+
+      const row = document.createElement("div");
+      row.className = `p-4 flex items-center justify-between ${
+        isYou ? "bg-[#7A9A77]/10" : ""
+      }`;
+      row.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="font-mono ${
+            isYou ? "text-[#5E7D5B]" : "text-biosnapMuted"
+          } font-bold text-sm">${i + 1}</span>
+          <div>
+            <p class="font-bold text-biosnapDark">${entry.username}${
+        isYou ? ' <span class="text-[11px] font-mono text-[#5E7D5B]">(You)</span>' : ""
+      }</p>
+            <p class="text-[11px] font-mono text-biosnapMuted">${entry.species} species found</p>
+          </div>
+        </div>
+        <span class="bg-[#7A9A77]/15 text-[#5E7D5B] text-xs font-mono px-2.5 py-1 rounded-full font-medium">Level ${level}</span>
+      `;
+      leaderboardListEl.appendChild(row);
+    });
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 3000);
+  }
+});
+  </script>
+</body>
+</html>
