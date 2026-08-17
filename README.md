@@ -1,4 +1,4 @@
-# 🌿 BIOSNAP — Neighborhood Plant Scavenger Hunt
+# BIOSNAP — Neighborhood Plant Scavenger Hunt
 
 A mobile-first web game: BIOSNAP shows you a plant to track down nearby, you go find it, then snap a photo to prove it. Matches get logged in a running field notebook, and you're ranked against other local explorers.
 
